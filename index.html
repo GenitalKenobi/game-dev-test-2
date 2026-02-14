@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D Fighter Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>2D Fighter Game</h1>
+
+    <div id="startMenu">
+        <button id="startButton">Start Fight</button>
+        <button id="settingsButton">Settings</button>
+    </div>
+
+    <div id="settingsMenu" style="display: none;">
+        <h2>Settings</h2>
+        <label for="speedRange">Movement Speed:</label>
+        <input type="range" id="speedRange" min="1" max="10" value="3">
+        <button id="backButton">Back</button>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="400" style="display: none;"></canvas>
+    <script src="app.js"></script>
+</body>
+</html>
