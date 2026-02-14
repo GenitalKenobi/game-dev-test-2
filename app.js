@@ -62,50 +62,73 @@ class Character {
         this.lastAttack = 0;
         this.isBlocking = false;
         this.isPlayer = isPlayer;
+        this.direction = isPlayer ? 'right' : 'left';
+        this.isWalking = false;
+        this.walkFrame = 0;
+        this.attackFrame = 0;
+        this.attackType = null;
     }
 
     draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        if (this.direction === 'left') {
+            ctx.scale(-1, 1);
+        }
+        
+        // draw the character centered at (0,0)
         // head
         ctx.beginPath();
-        ctx.arc(this.x + this.width / 2, this.y + this.height / 6, this.width / 4, 0, Math.PI * 2);
+        ctx.arc(0, -this.height/3, this.width / 4, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.closePath();
 
         // body
         ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2, this.y + this.height / 3);
-        ctx.lineTo(this.x + this.width / 2, this.y + this.height * 0.7);
+        ctx.moveTo(0, -this.height/6);
+        ctx.lineTo(0, this.height * 0.2);
         ctx.strokeStyle = this.color;
         ctx.stroke();
         ctx.closePath();
 
         // arms
+        let arm1X = -this.width/2;
+        let arm2X = this.width/2;
+        if(this.isAttacking && this.attackType === 'punch'){
+            arm1X = this.width / 2;
+            arm2X = this.width;
+        }
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y + this.height / 2);
-        ctx.lineTo(this.x + this.width, this.y + this.height / 2);
+        ctx.moveTo(arm1X, 0);
+        ctx.lineTo(arm2X, 0);
         ctx.stroke();
         ctx.closePath();
 
         // legs
-        ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2, this.y + this.height * 0.7);
-        ctx.lineTo(this.x, this.y + this.height);
-        ctx.stroke();
-        ctx.closePath();
-
-        ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2, this.y + this.height * 0.7);
-        ctx.lineTo(this.x + this.width, this.y + this.height);
-        ctx.stroke();
-        ctx.closePath();
-
-
-        // Draw attack box for debugging
-        if (this.isAttacking) {
-            ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
-            ctx.fillRect(this.attackBox.x, this.attackBox.y, this.attackBox.width, this.attackBox.height);
+        let leg1X = -this.width/4;
+        let leg2X = this.width/4;
+        if (this.isWalking && !this.isJumping) {
+            leg1X = Math.sin(this.walkFrame * 0.5) * this.width/4;
+            leg2X = Math.sin(this.walkFrame * 0.5 + Math.PI) * this.width/4;
         }
+        if(this.isAttacking && this.attackType === 'kick'){
+            leg1X = this.width/2;
+            leg2X = this.width/4;
+        }
+        ctx.beginPath();
+        ctx.moveTo(0, this.height * 0.2);
+        ctx.lineTo(leg1X, this.height/2);
+        ctx.stroke();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.moveTo(0, this.height * 0.2);
+        ctx.lineTo(leg2X, this.height/2);
+        ctx.stroke();
+        ctx.closePath();
+        
+        ctx.restore();
     }
 
     update() {
@@ -129,11 +152,26 @@ class Character {
         if (this.isPlayer) {
             if (keys['ArrowLeft'] && !this.isBlocking) {
                 this.dx = -this.speed;
+                this.direction = 'left';
+                this.isWalking = true;
             } else if (keys['ArrowRight'] && !this.isBlocking) {
                 this.dx = this.speed;
+                this.direction = 'right';
+                this.isWalking = true;
             } else {
                 this.dx = 0;
+                this.isWalking = false;
             }
+        }
+
+        if(this.isWalking){
+            this.walkFrame++;
+        } else {
+            this.walkFrame = 0;
+        }
+
+        if (this.isAttacking) {
+            this.attackFrame++;
         }
 
 
@@ -158,6 +196,14 @@ class Character {
         this.x += this.dx;
         this.y += this.dy;
 
+        // Boundary checks
+        if (this.x < 0) {
+            this.x = 0;
+        }
+        if (this.x + this.width > canvas.width) {
+            this.x = canvas.width - this.width;
+        }
+
         // Ground collision
         if (this.y + this.height > canvas.height) {
             this.y = canvas.height - this.height;
@@ -178,11 +224,13 @@ class Character {
 
     attack(type) {
         this.isAttacking = true;
+        this.attackType = type;
+        this.attackFrame = 0;
         const attackWidth = type === 'punch' ? 50 : 70;
         const attackHeight = type === 'punch' ? 20 : 30;
         const attackY = type === 'punch' ? this.y : this.y + this.height / 2;
         
-        if(this.isPlayer){
+        if(this.direction === 'right'){
             this.attackBox = {
                 x: this.x + this.width,
                 y: attackY,
@@ -201,6 +249,7 @@ class Character {
 
         setTimeout(() => {
             this.isAttacking = false;
+            this.attackType = null;
         }, 200);
     }
 }
@@ -217,10 +266,15 @@ function computerAI() {
     // Movement
     if (distance > 150) {
         computer.dx = computer.speed;
-    } else if (distance < 100) {
+        computer.direction = 'right';
+        computer.isWalking = true;
+    } else if (distance < -150) {
         computer.dx = -computer.speed;
+        computer.direction = 'left';
+        computer.isWalking = true;
     } else {
         computer.dx = 0;
+        computer.isWalking = false;
     }
 
     // Attacking
