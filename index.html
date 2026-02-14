@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2D Fighter Game</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,11 +20,21 @@
     <div id="settingsMenu" style="display: none;">
         <h2>Settings</h2>
         <label for="speedRange">Movement Speed:</label>
-        <input type="range" id="speedRange" min="1" max="10" value="3">
+        <input type="range" id="speedRange" min="1.5" max="3" step="0.1" value="3">
+        <label for="backgroundSelect">Background:</label>
+        <select id="backgroundSelect">
+            <option value="#fff">White</option>
+            <option value="#ddd">Light Gray</option>
+            <option value="#87ceeb">Sky Blue</option>
+            <option value="url(https://picsum.photos/id/1015/800/400)">Mountains</option>
+            <option value="url(https://picsum.photos/id/1016/800/400)">Forest</option>
+            <option value="url(https://picsum.photos/id/1025/800/400)">Dojo</option>
+        </select>
         <button id="backButton">Back</button>
     </div>
 
     <canvas id="gameCanvas" width="800" height="400" style="display: none;"></canvas>
+    <button id="backToMenuButton" style="display: none;">Back to Menu</button>
     <script src="app.js"></script>
 </body>
 </html>

@@ -6,11 +6,13 @@ const startButton = document.getElementById('startButton');
 const settingsButton = document.getElementById('settingsButton');
 const backButton = document.getElementById('backButton');
 const speedRange = document.getElementById('speedRange');
+const backToMenuButton = document.getElementById('backToMenuButton');
+const backgroundSelect = document.getElementById('backgroundSelect');
 
-let movementSpeed = 3;
+let movementSpeed = 3.0;
 
 speedRange.addEventListener('input', (e) => {
-    movementSpeed = parseInt(e.target.value);
+    movementSpeed = parseFloat(e.target.value);
 });
 
 startButton.addEventListener('click', () => {
@@ -27,6 +29,23 @@ settingsButton.addEventListener('click', () => {
 backButton.addEventListener('click', () => {
     settingsMenu.style.display = 'none';
     startMenu.style.display = 'block';
+});
+
+backToMenuButton.addEventListener('click', () => {
+    canvas.style.display = 'none';
+    backToMenuButton.style.display = 'none';
+    startMenu.style.display = 'block';
+});
+
+backgroundSelect.addEventListener('input', (e) => {
+    const value = e.target.value;
+    if (value.startsWith('url(')) {
+        canvas.style.backgroundImage = value;
+        canvas.style.backgroundSize = 'cover';
+    } else {
+        canvas.style.backgroundColor = value;
+        canvas.style.backgroundImage = 'none';
+    }
 });
 
 
@@ -58,7 +77,6 @@ class Character {
         this.speed = movementSpeed;
         this.isAttacking = false;
         this.attackBox = { x: 0, y: 0, width: 0, height: 0 };
-        this.attackCooldown = 500; // milliseconds
         this.lastAttack = 0;
         this.isBlocking = false;
         this.isPlayer = isPlayer;
@@ -77,56 +95,49 @@ class Character {
         }
         
         // draw the character centered at (0,0)
+        ctx.fillStyle = this.color;
+
         // head
         ctx.beginPath();
         ctx.arc(0, -this.height/3, this.width / 4, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
         ctx.fill();
         ctx.closePath();
 
         // body
-        ctx.beginPath();
-        ctx.moveTo(0, -this.height/6);
-        ctx.lineTo(0, this.height * 0.2);
-        ctx.strokeStyle = this.color;
-        ctx.stroke();
-        ctx.closePath();
+        ctx.fillRect(-this.width / 4, -this.height / 6, this.width / 2, this.height / 2);
 
         // arms
-        let arm1X = -this.width/2;
-        let arm2X = this.width/2;
-        if(this.isAttacking && this.attackType === 'punch'){
-            arm1X = this.width / 2;
-            arm2X = this.width;
+        if (this.isAttacking && this.attackType === 'punch') {
+            // Punch animation
+            ctx.fillRect(this.width / 4, -this.height / 8, this.attackBox.width, this.height / 8); // Attacking arm
+            ctx.fillRect(-this.width / 2, -this.height / 8, this.width/2, this.height/8); // Other arm
+        } else {
+            // Idle arms
+            ctx.fillRect(-this.width / 2, -this.height/8, this.width, this.height/8);
         }
-        ctx.beginPath();
-        ctx.moveTo(arm1X, 0);
-        ctx.lineTo(arm2X, 0);
-        ctx.stroke();
-        ctx.closePath();
 
         // legs
-        let leg1X = -this.width/4;
-        let leg2X = this.width/4;
-        if (this.isWalking && !this.isJumping) {
-            leg1X = Math.sin(this.walkFrame * 0.5) * this.width/4;
-            leg2X = Math.sin(this.walkFrame * 0.5 + Math.PI) * this.width/4;
+        if (this.isAttacking && this.attackType === 'kick') {
+            // Kick animation using the front leg
+            const legLength = this.attackBox.width;
+            ctx.save();
+            ctx.translate(0, this.height * 0.2); // Move to the leg pivot point
+            ctx.rotate(-Math.PI / 2); // Rotate to make the leg horizontal
+            ctx.fillRect(0, -this.width / 4, legLength, this.width / 4); // Draw the kicking leg
+            ctx.restore();
+            // Draw the stationary back leg
+            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width / 4, this.height / 2);
+        } else if (this.isWalking && !this.isJumping) {
+            // Walking animation
+            const leg1Y = Math.sin(this.walkFrame * 0.2) * 10;
+            const leg2Y = Math.sin(this.walkFrame * 0.2 + Math.PI) * 10;
+            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width / 4, this.height / 2 + leg1Y);
+            ctx.fillRect(0, this.height * 0.2, this.width / 4, this.height / 2 + leg2Y);
+        } else {
+            // Idle legs
+            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width/4, this.height/2);
+            ctx.fillRect(0, this.height * 0.2, this.width/4, this.height/2);
         }
-        if(this.isAttacking && this.attackType === 'kick'){
-            leg1X = this.width/2;
-            leg2X = this.width/4;
-        }
-        ctx.beginPath();
-        ctx.moveTo(0, this.height * 0.2);
-        ctx.lineTo(leg1X, this.height/2);
-        ctx.stroke();
-        ctx.closePath();
-
-        ctx.beginPath();
-        ctx.moveTo(0, this.height * 0.2);
-        ctx.lineTo(leg2X, this.height/2);
-        ctx.stroke();
-        ctx.closePath();
         
         ctx.restore();
     }
@@ -214,9 +225,10 @@ class Character {
         // Attacks
         if (this.isPlayer && (keys['KeyZ'] || keys['KeyX']) && !this.isBlocking) {
             const now = Date.now();
-            if (now - this.lastAttack > this.attackCooldown) {
+            const attackType = keys['KeyZ'] ? 'punch' : 'kick';
+            const cooldown = attackType === 'kick' ? 800 : 500;
+            if (now - this.lastAttack > cooldown) {
                 this.lastAttack = now;
-                const attackType = keys['KeyZ'] ? 'punch' : 'kick';
                 this.attack(attackType);
             }
         }
@@ -250,7 +262,7 @@ class Character {
         setTimeout(() => {
             this.isAttacking = false;
             this.attackType = null;
-        }, 200);
+        }, 400);
     }
 }
 
@@ -279,9 +291,10 @@ function computerAI() {
 
     // Attacking
     const now = Date.now();
-    if (Math.abs(distance) < 120 && now - computer.lastAttack > computer.attackCooldown) {
+    const attackType = Math.random() < 0.5 ? 'punch' : 'kick';
+    const cooldown = attackType === 'kick' ? 800 : 500;
+    if (Math.abs(distance) < 120 && now - computer.lastAttack > cooldown) {
         computer.lastAttack = now;
-        const attackType = Math.random() < 0.5 ? 'punch' : 'kick';
         computer.attack(attackType);
     }
 
@@ -341,18 +354,18 @@ function drawUI() {
 }
 
 function checkGameOver() {
-    if (player.health <= 0) {
-        player.health = 0;
+    if (player.health <= 0 || computer.health <= 0) {
         gameOver = true;
         ctx.fillStyle = 'black';
         ctx.font = '48px serif';
-        ctx.fillText('Computer Wins!', canvas.width / 2 - 150, canvas.height / 2);
-    } else if (computer.health <= 0) {
-        computer.health = 0;
-        gameOver = true;
-        ctx.fillStyle = 'black';
-        ctx.font = '48px serif';
-        ctx.fillText('Player Wins!', canvas.width / 2 - 150, canvas.height / 2);
+        if (player.health <= 0) {
+            player.health = 0;
+            ctx.fillText('Computer Wins!', canvas.width / 2 - 150, canvas.height / 2);
+        } else {
+            computer.health = 0;
+            ctx.fillText('Player Wins!', canvas.width / 2 - 150, canvas.height / 2);
+        }
+        document.getElementById('backToMenuButton').style.display = 'block';
     }
 }
 
