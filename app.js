@@ -9,7 +9,7 @@ const speedRange = document.getElementById('speedRange');
 const backToMenuButton = document.getElementById('backToMenuButton');
 const backgroundSelect = document.getElementById('backgroundSelect');
 
-let movementSpeed = 3.0;
+let movementSpeed = 2.25;
 
 speedRange.addEventListener('input', (e) => {
     movementSpeed = parseFloat(e.target.value);
@@ -93,52 +93,81 @@ class Character {
         if (this.direction === 'left') {
             ctx.scale(-1, 1);
         }
-        
-        // draw the character centered at (0,0)
+    
         ctx.fillStyle = this.color;
-
-        // head
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+    
+        // Head
         ctx.beginPath();
-        ctx.arc(0, -this.height/3, this.width / 4, 0, Math.PI * 2);
+        ctx.arc(0, -this.height / 2.5, this.width / 3, 0, Math.PI * 2);
         ctx.fill();
-        ctx.closePath();
-
-        // body
-        ctx.fillRect(-this.width / 4, -this.height / 6, this.width / 2, this.height / 2);
-
-        // arms
+    
+        // Body
+        ctx.beginPath();
+        ctx.moveTo(0, -this.height / 4);
+        ctx.lineTo(0, this.height / 4);
+        ctx.stroke();
+    
+        // Arms
         if (this.isAttacking && this.attackType === 'punch') {
-            // Punch animation
-            ctx.fillRect(this.width / 4, -this.height / 8, this.attackBox.width, this.height / 8); // Attacking arm
-            ctx.fillRect(-this.width / 2, -this.height / 8, this.width/2, this.height/8); // Other arm
+            // Punching arm
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.width / 1.5, -this.height / 10);
+            ctx.stroke();
+            // Other arm
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-this.width / 2, this.height / 10);
+            ctx.stroke();
         } else {
             // Idle arms
-            ctx.fillRect(-this.width / 2, -this.height/8, this.width, this.height/8);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-this.width / 2.5, this.height / 5);
+            ctx.stroke();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.width / 2.5, this.height / 5);
+            ctx.stroke();
         }
-
-        // legs
+    
+        // Legs
         if (this.isAttacking && this.attackType === 'kick') {
-            // Kick animation using the front leg
-            const legLength = this.attackBox.width;
-            ctx.save();
-            ctx.translate(0, this.height * 0.2); // Move to the leg pivot point
-            ctx.rotate(-Math.PI / 2); // Rotate to make the leg horizontal
-            ctx.fillRect(0, -this.width / 4, legLength, this.width / 4); // Draw the kicking leg
-            ctx.restore();
-            // Draw the stationary back leg
-            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width / 4, this.height / 2);
+            // Kicking leg
+            ctx.beginPath();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(this.width, this.height / 4);
+            ctx.stroke();
+            // Back leg
+            ctx.beginPath();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(-this.width / 2, this.height / 2);
+            ctx.stroke();
         } else if (this.isWalking && !this.isJumping) {
-            // Walking animation
-            const leg1Y = Math.sin(this.walkFrame * 0.2) * 10;
-            const leg2Y = Math.sin(this.walkFrame * 0.2 + Math.PI) * 10;
-            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width / 4, this.height / 2 + leg1Y);
-            ctx.fillRect(0, this.height * 0.2, this.width / 4, this.height / 2 + leg2Y);
+            const legAngle = Math.sin(this.walkFrame * 0.3) * 0.5;
+            // Leg 1
+            ctx.beginPath();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(this.width / 2 * Math.cos(legAngle), this.height / 4 + this.height / 3 * Math.sin(legAngle));
+            ctx.stroke();
+            // Leg 2
+            ctx.beginPath();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(this.width / 2 * Math.cos(legAngle + Math.PI), this.height / 4 + this.height / 3 * Math.sin(legAngle + Math.PI));
+            ctx.stroke();
         } else {
             // Idle legs
-            ctx.fillRect(-this.width / 4, this.height * 0.2, this.width/4, this.height/2);
-            ctx.fillRect(0, this.height * 0.2, this.width/4, this.height/2);
+            ctx.beginPath();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(-this.width / 3, this.height / 2);
+            ctx.stroke();
+            ctx.moveTo(0, this.height / 4);
+            ctx.lineTo(this.width / 3, this.height / 2);
+            ctx.stroke();
         }
-        
+    
         ctx.restore();
     }
 
@@ -262,7 +291,7 @@ class Character {
         setTimeout(() => {
             this.isAttacking = false;
             this.attackType = null;
-        }, 400);
+        }, 600);
     }
 }
 
